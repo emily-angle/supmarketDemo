@@ -3,12 +3,16 @@
     <nav-bar class="home-nav">
       <template v-slot:center>购物街</template>
     </nav-bar>
+    <tab-control class="tab-control" :titles="['流行', '新款', '精选']" @tabClick="tabClick" v-show="isTabFixed"
+                 ref="tabControl1"
+    ></tab-control>
     <scroll class="content" :probe-type="3" :pull-up-load="true" ref="scroll" @scroll="contentScroll"
             @pullingUp="loadMore">
-      <home-swiper :bannners="bannners"></home-swiper>
+      <home-swiper :bannners="bannners" @swiperImgLoad="swiperImgLoad"></home-swiper>
       <recommend-view :recomends="recomends"></recommend-view>
       <feature-view></feature-view>
-      <tab-control class="tab-control" :titles="['流行', '新款', '精选']" @tabClick="tabClick"></tab-control>
+      <tab-control :titles="['流行', '新款', '精选']" @tabClick="tabClick" ref="tabControl"
+      ></tab-control>
       <good-list :goods="showGoods"/>
     </scroll>
     <back-top @click="backClick" v-show="isShowBackTop"></back-top>
@@ -28,7 +32,7 @@
 
 
   import {getHomeMultidata, getHomeGoods} from "network/home";
-
+  import {itemListenerMixin} from "common/mixin";
   export default {
     name: "Home",
     components: {Scroll, GoodList, NavBar, HomeSwiper, RecommendView, FeatureView, TabControl, BackTop},
@@ -41,7 +45,9 @@
           'new': {page: 0, list: []},
           'sell': {page: 0, list: []}
         }, currentType: 'pop',
-        isShowBackTop: false
+        isShowBackTop: false,
+        tabOffsetTop: 0,
+        isTabFixed: false
       }
     },
     computed: {
@@ -49,16 +55,12 @@
         return this.goods[this.currentType].list
       }
     },
+    mixins:[itemListenerMixin],
     created() {
       //1.请求多个数据
       this.promiseAll([this.getHomeMultidata(), this.getHomeGoods('pop'), this.getHomeGoods('new'), this.getHomeGoods('sell')])
-      console.log(this.$bus);
-      this.$emitter.on('imgLoad',()=>{
-      console.log('tubian')
-      })
     },
     mounted() {
-
     },
     methods: {
       /**
@@ -85,12 +87,15 @@
       },
       loadMore() {
         this.getHomeGoods(this.currentType)
-        this.$refs.scroll.refresh()
         this.$refs.scroll.finishPullUp()
       },
+
       /**
        * 事件监听相关方法
        * */
+      swiperImgLoad() {
+        this.tabOffsetTop = this.$refs.tabControl.$el.offsetTop
+      },
       tabClick(index) {
         switch (index) {
           case 0:
@@ -103,13 +108,15 @@
             this.currentType = 'sell'
             break
         }
+        this.$refs.tabControl1.currentIndex = index
+        this.$refs.tabControl.currentIndex = index
       },
       backClick() {
         this.$refs.scroll.scrollTo(0, 0, 500)
-        console.log('监听点击')
       },
       contentScroll(position) {
         this.isShowBackTop = (-position.y > 1000) ? true : false
+        this.isTabFixed = (-position.y) > this.tabOffsetTop
       }
     }
   }
@@ -125,18 +132,11 @@
   .home-nav {
     background-color: var(--color-tint);
     color: #fff;
-
-    position: fixed;
-    left: 0;
-    right: 0;
-    top: 0;
-    z-index: 9;
   }
 
   .tab-control {
-    position: sticky;
-    top: 44px;
-    z-index: 9;
+    position: relative;
+    z-index: 99;
   }
 
   .content {
@@ -148,10 +148,4 @@
     left: 0;
     right: 0;
   }
-
-  /*.content {*/
-  /*height: calc(100% - 93px);*/
-  /*overflow: hidden;*/
-  /*margin-top: 44px;*/
-  /*}*/
 </style>

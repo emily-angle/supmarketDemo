@@ -7,8 +7,7 @@
     </slot>
     <div class="indicator">
       <slot name="indicator" v-if="showIndicator && slideCount>1">
-        <div v-for="(item, index) in slideCount" class="indi-item" :class="{active: index === currentIndex-1}"
-             :key="index"></div>
+        <div v-for="(item, index) in slideCount" class="indi-item" :class="{active: index === currentIndex-1}" :key="index"></div>
       </slot>
     </div>
   </div>
@@ -75,7 +74,7 @@
         this.scrolling = true;
 
         // 1.开始滚动动画
-        this.swiperStyle.transition = 'transform ' + this.animDuration + 'ms';
+        this.swiperStyle.transition ='transform '+ this.animDuration + 'ms';
         this.setTransform(currentPosition);
 
         // 2.判断滚动到的位置
@@ -101,7 +100,7 @@
           }
 
           // 2.结束移动后的回调
-          this.$emit('transitionEnd', this.currentIndex - 1);
+          this.$emit('transitionEnd', this.currentIndex-1);
         }, this.animDuration)
       },
 
@@ -121,8 +120,10 @@
         // 1.获取要操作的元素
         let swiperEl = document.querySelector('.swiper');
         let slidesEls = swiperEl.getElementsByClassName('slide');
+
         // 2.保存个数
         this.slideCount = slidesEls.length;
+
         // 3.如果大于1个, 那么在前后分别添加一个slide
         if (this.slideCount > 1) {
           let cloneFirst = slidesEls[0].cloneNode(true);
@@ -161,6 +162,7 @@
         // 2.设置当前的位置
         this.setTransform(moveDistance);
       },
+
       touchEnd: function () {
         // 1.获取移动的距离
         let currentMove = Math.abs(this.distance);
@@ -207,7 +209,7 @@
   }
 </script>
 
-<style >
+<style scoped>
   #hy-swiper {
     overflow: hidden;
     position: relative;
@@ -238,6 +240,6 @@
   }
 
   .indi-item.active {
-    background-color: rgba(212, 62, 46, 1.0);
+    background-color: rgba(212,62,46,1.0);
   }
 </style>
