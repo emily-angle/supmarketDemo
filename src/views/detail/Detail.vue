@@ -1,21 +1,23 @@
 <template>
   <div id="detail">
-    <detail-nav-bar></detail-nav-bar>
-    <scroll class="content" ref="scroll">
-      <detail-swiper :top-images="topImages"></detail-swiper>
+    <detail-nav-bar @titleClick="titleClick" :current-index="currentIndex"></detail-nav-bar>
+    <scroll class="content" ref="scroll" @scroll="contentScroll" :probe-type="3">
+      <detail-swiper :top-images="topImages" ref="base"></detail-swiper>
       <detail-base-info :goods="goodInfo"></detail-base-info>
       <detail-shop-info :shop="shop"></detail-shop-info>
-      <detail-goods-info :detail-info="detailInfo" @refresh="refreshScroll"></detail-goods-info>
+      <detail-goods-info :detail-info="detailInfo" @refreshImgLoad="refreshImg"></detail-goods-info>
       <detail-param-info ref="param" :param-info="paramInfo"></detail-param-info>
-      <detail-comment-info :comment-info="commentInfo"></detail-comment-info>
-      <detail-recommend-info :recommend-list="recommendList"></detail-recommend-info>
+      <detail-comment-info :comment-info="commentInfo" ref="comment"></detail-comment-info>
+      <detail-recommend-info :recommend-list="recommendList" ref="recommend"></detail-recommend-info>
     </scroll>
+    <back-top @click="backTop" v-show="showBackTop"></back-top>
+    <detail-bottom-bar @addToCart="addToCart"/>
   </div>
 </template>
 
 <script>
   import Scroll from 'components/common/scroll/Scroll'
-
+  import BackTop from "components/content/backTop/BackTop";
   import DetailNavBar from "./childcomps/DetailNavBar";
   import DetailSwiper from "./childcomps/DetailSwiper";
   import DetailBaseInfo from "./childcomps/DetailBaseInfo";
@@ -24,31 +26,60 @@
   import DetailParamInfo from "./childcomps/DetailParamInfo";
   import DetailCommentInfo from "./childcomps/DetailCommentInfo";
   import DetailRecommendInfo from "./childcomps/DetailRecommendInfo";
+  import DetailBottomBar from "./childcomps/DetailBottomBar";
 
-  import {getDetail,getRecommend, GoodsInfo, Shop,GoodsParam} from "network/detail";
-  import {itemListenerMixin} from "common/mixin";
+
+  import {getDetail, getRecommend, GoodsInfo, Shop, GoodsParam} from "network/detail";
+  import {itemListenerMixin, backTopMixin} from "common/mixin";
+  import {debounce} from "common/utils";
+  import {BACKTOP_DISTANCE} from 'common/const'
 
   export default {
     name: "Detail",
     components: {
-      DetailNavBar, DetailSwiper, DetailBaseInfo, DetailShopInfo, Scroll, DetailGoodsInfo,DetailParamInfo,DetailCommentInfo,DetailRecommendInfo},
+      DetailNavBar,
+      DetailSwiper,
+      DetailBaseInfo,
+      DetailShopInfo,
+      Scroll,
+      DetailGoodsInfo,
+      DetailParamInfo,
+      DetailCommentInfo,
+      DetailRecommendInfo,
+      DetailBottomBar, BackTop
+    },
     data() {
       return {
+        iid: null,
         topImages: [],
         goodInfo: {},
         shop: {},
         detailInfo: {},
-        paramInfo:{},
-        commentInfo:{},
-        recommendList:[]
+        paramInfo: {},
+        commentInfo: {},
+        recommendList: [],
+        themeTopYs: [],
+        getThemeTopY: null,
+        currentIndex: 0
       }
     },
     created() {
       this._getDetailData()
       this._getRecommend()
+      this.getThemeTopY = debounce(this._getOffsetTops, 100)
     },
-    mixins:[itemListenerMixin],
+    mixins: [itemListenerMixin, backTopMixin],
+    beforeUnmount() {
+      this.$emitter.off('imgLoad', this.itemImgListener)
+    },
+    mounted() {
+      console.log('详情页')
+    },
     methods: {
+      refreshImg() {
+        this.itemImgListener()
+        this.getThemeTopY()
+      },
       _getDetailData() {
         const iid = this.$route.params.id
         this.iid = iid
@@ -79,8 +110,47 @@
           this.recommendList = res.list
         })
       },
-      refreshScroll() {
-        this.$refs.scroll.refresh()
+      _getOffsetTops() {
+        if (this.$route.name === 'detail') {
+          this.themeTopYs = []
+          this.themeTopYs.push(this.$refs.base.$el.offsetTop)
+          this.themeTopYs.push(this.$refs.param.$el.offsetTop)
+          this.themeTopYs.push(this.$refs.comment.$el.offsetTop)
+          this.themeTopYs.push(this.$refs.recommend.$el.offsetTop)
+          this.themeTopYs.push(Number.MAX_VALUE)
+        }
+      },
+      titleClick(index) {
+        // this.getThemeTopY()
+        this.$refs.scroll.scrollTo(0, -this.themeTopYs[index], 100)
+      },
+      addToCart() {
+        //获取购物车需要展示的内容
+        const product = {}
+        product.image = this.topImages[0];
+        product.title = this.goodInfo.title;
+        product.desc = this.goodInfo.desc;
+        product.price = this.goodInfo.nowPrice;
+        product.iid = this.iid;
+        product.checked = true;
+        product.count = 1;
+        this.$store.dispatch('addCart', product).then(res=>{
+          console.log(res)
+        })
+      },
+      contentScroll(position) {
+        this.showBackTop = position.y < -BACKTOP_DISTANCE
+        const scrollY = -position.y
+        let length = this.themeTopYs.length
+
+        for (let i = 0; i < length - 1; i++) {
+          if (scrollY >= this.themeTopYs[i] && scrollY < this.themeTopYs[i + 1]) {
+            if (this.currentIndex !== i) {
+              this.currentIndex = i
+            }
+            break;
+          }
+        }
       }
     }
   }
@@ -95,6 +165,8 @@
   }
 
   .content {
-    height: calc(100% - 44px);
+    position: absolute;
+    top: 44px;
+    bottom: 60px;
   }
 </style>

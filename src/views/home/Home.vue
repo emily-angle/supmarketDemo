@@ -8,14 +8,14 @@
     ></tab-control>
     <scroll class="content" :probe-type="3" :pull-up-load="true" ref="scroll" @scroll="contentScroll"
             @pullingUp="loadMore">
-      <home-swiper :bannners="bannners" @swiperImgLoad="swiperImgLoad"></home-swiper>
+      <home-swiper :bannners="bannners" @swiperImgLoad="swiperImgLoad" ref="hSwiper"></home-swiper>
       <recommend-view :recomends="recomends"></recommend-view>
       <feature-view></feature-view>
       <tab-control :titles="['流行', '新款', '精选']" @tabClick="tabClick" ref="tabControl"
       ></tab-control>
       <good-list :goods="showGoods"/>
     </scroll>
-    <back-top @click="backClick" v-show="isShowBackTop"></back-top>
+    <back-top @click="backTop" v-show="showBackTop"></back-top>
   </div>
 </template>
 
@@ -32,7 +32,9 @@
 
 
   import {getHomeMultidata, getHomeGoods} from "network/home";
-  import {itemListenerMixin} from "common/mixin";
+  import {itemListenerMixin,backTopMixin} from "common/mixin";
+  import {BACKTOP_DISTANCE} from 'common/const'
+
   export default {
     name: "Home",
     components: {Scroll, GoodList, NavBar, HomeSwiper, RecommendView, FeatureView, TabControl, BackTop},
@@ -45,7 +47,6 @@
           'new': {page: 0, list: []},
           'sell': {page: 0, list: []}
         }, currentType: 'pop',
-        isShowBackTop: false,
         tabOffsetTop: 0,
         isTabFixed: false
       }
@@ -55,12 +56,20 @@
         return this.goods[this.currentType].list
       }
     },
-    mixins:[itemListenerMixin],
+    mixins: [itemListenerMixin,backTopMixin],
     created() {
       //1.请求多个数据
       this.promiseAll([this.getHomeMultidata(), this.getHomeGoods('pop'), this.getHomeGoods('new'), this.getHomeGoods('sell')])
     },
-    mounted() {
+    activated() {
+      //重置
+      //轮播图重置timer参数
+      this.$refs.hSwiper.startTimer()
+      this.$emitter.on('imgLoad',this.itemImgListener)
+    },
+    deactivated() {
+      this.$refs.hSwiper.stopTimer()
+      this.$emitter.off('imgLoad',this.itemImgListener)
     },
     methods: {
       /**
@@ -111,11 +120,9 @@
         this.$refs.tabControl1.currentIndex = index
         this.$refs.tabControl.currentIndex = index
       },
-      backClick() {
-        this.$refs.scroll.scrollTo(0, 0, 500)
-      },
+
       contentScroll(position) {
-        this.isShowBackTop = (-position.y > 1000) ? true : false
+        this.showBackTop = (-position.y > BACKTOP_DISTANCE)
         this.isTabFixed = (-position.y) > this.tabOffsetTop
       }
     }

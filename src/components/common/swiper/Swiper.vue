@@ -47,7 +47,9 @@
       // 1.操作DOM, 在前后添加Slide
       setTimeout(() => {
         this.handleDom();
-
+        if(this.playTimer){
+          this.stopTimer();
+        }
         // 2.开启定时器
         this.startTimer();
       }, 3000)

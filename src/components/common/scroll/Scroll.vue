@@ -43,10 +43,11 @@
         })
 
         // 2.监听滚动的位置
-        this.scroll.on('scroll', (position) => {
-          // console.log(position);
-          this.$emit('scroll', position)
-        })
+        if (this.probeType === 3) {
+          this.scroll.on('scroll', (position) => {
+            this.$emit('scroll', position)
+          })
+        }
 
         // 3.监听上拉事件
         if (this.pullUpLoad) {
