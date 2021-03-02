@@ -12,11 +12,13 @@
     </scroll>
     <back-top @click="backTop" v-show="showBackTop"></back-top>
     <detail-bottom-bar @addToCart="addToCart"/>
+    <toast ref="toast" />
   </div>
 </template>
 
 <script>
   import Scroll from 'components/common/scroll/Scroll'
+  // import Toast from "components/common/toast/Toast";
   import BackTop from "components/content/backTop/BackTop";
   import DetailNavBar from "./childcomps/DetailNavBar";
   import DetailSwiper from "./childcomps/DetailSwiper";
@@ -33,10 +35,12 @@
   import {itemListenerMixin, backTopMixin} from "common/mixin";
   import {debounce} from "common/utils";
   import {BACKTOP_DISTANCE} from 'common/const'
+  import {mapActions} from 'vuex'
 
   export default {
     name: "Detail",
     components: {
+      // Toast,
       DetailNavBar,
       DetailSwiper,
       DetailBaseInfo,
@@ -50,6 +54,7 @@
     },
     data() {
       return {
+        message: '加入购物车成功',
         iid: null,
         topImages: [],
         goodInfo: {},
@@ -76,6 +81,7 @@
       console.log('详情页')
     },
     methods: {
+      ...mapActions(['addCart']),
       refreshImg() {
         this.itemImgListener()
         this.getThemeTopY()
@@ -134,8 +140,10 @@
         product.iid = this.iid;
         product.checked = true;
         product.count = 1;
-        this.$store.dispatch('addCart', product).then(res=>{
-          console.log(res)
+        let _this=this
+        this.addCart(product).then(() => {
+         // this.$toast
+          _this.$refs.toast.show('添加成功',2000)
         })
       },
       contentScroll(position) {

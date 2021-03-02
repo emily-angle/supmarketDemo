@@ -32,6 +32,6 @@
   }
 
   .content {
-    height: calc(100% - 93px);
+    height: calc(100% - 137px);
   }
 </style>

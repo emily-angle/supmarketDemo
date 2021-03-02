@@ -9,7 +9,7 @@ export default {
       } else {
         commit(ADD_COUNTER, hasProduct)
       }
-      resolve(state.cartList)
+      resolve('添加购物车成功')
     })
   },
   changeCheckedCart({state, commit}, payload) {
